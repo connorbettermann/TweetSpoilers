@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset UTF-8"/>
+        <meta name = "viewport" content="width=device-width, initial-scale=1">
+        <meta name="twitter:card" content="summary"></meta>
+        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.0/css/bootstrap.min.css" />
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script type="text/javascript" src="http://localhost:3000/socket.io/socket.io.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.0/js/bootstrap.min.js"></script>
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css" integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">
+        <title>TweetSpoilers</title>
+        <link rel="icon" href="/img/favicon.ico">
+        
+        
+        
+    </head>
+
+    <style>
+        .navbar {
+			    margin-bottom:30px;
+        }
+
+        .profilepic{
+          width:50px;
+          height:50px;
+        }
+
+        .logo{
+          width:35px;
+          height:25px;
+        }
+            
+    </style>
+
+    <body>
+            <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+                    <a class="navbar-brand h1" href="#" style="font-size: 30px;"><img class="logo" src="Icon.png" style="display: inline-block; padding-right: 10px;">TweetSpoilers</a>
+                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                      <span class="navbar-toggler-icon"></span>
+                    </button>
+                  
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                      <ul class="navbar-nav mr-auto">
+                        <li class="nav-item active">
+                          <a class="nav-link lead" href="index.html" style="font-size: 20px;">Home <span class="sr-only">(current)</span></a>
+                        </li>
+                        <li class="nav-item">
+                          <a class="nav-link lead" href="about.html" style="font-size: 20px;">About</a>
+                        </li>
+                      </ul>
+                      <!---
+                      <form class="form-inline my-2 my-lg-0">
+                        <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+                        <button class="btn my-2 my-sm-0" type="submit">Search</button>
+                      </form>
+                      --->
+                    </div>
+                    <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
+                      <ul class="navbar-nav ml-auto">
+                          <li class="nav-item">
+                              <a class="nav-link" href="https://github.com/seanlesch/TweetSpoilers"><i class="fab fa-github fa-2x"></i></a>
+                          </li>
+                          <li class="nav-item">
+                                  <a class="nav-link" href="https://twitter.com/"><i class="fab fa-twitter fa-2x"></i></a>
+                          </li>
+                      </ul>
+                  </div>
+                  </nav>
+
+		<div class="jumbotron">
+			<div class="container">
+				<h1 class="display-4">TweetSpoilers</h1>
+				<p class="lead">Track down movie and TV spoilers with swift justice and precision</p>
+			</div>
+		</div>
+
+		<div class="col-md-4 offset-md-4">
+      <form class = "form">
+        <div class="form-group">
+          <select class="form-control" id="mediaselection" placeholder="Choose a movie or show" required>
+            <option value = ''>Choose a movie or show</option>
+            <option value = 'endgame'>Avengers: Endgame</option>
+            <option value = 'GoT'>Game of Thrones Season 8</option>
+            <option value = 'titanic'>Titanic</option>
+            <option value = 'other'>Other (use my own spoilers)</option>
+          </select>
+          
+          <br>
+          <input type="text" id="other" value= "" class="form-control" placeholder="Enter your desired spoilers">
+        </div>
+        <br>
+        <div class = "form-group">
+          <button class = "btn btn-primary" id = "getresults" style="width:100%">Get results</button>
+        </div>
+      </form>
+      <hr>
+      
+            
+      <br>
+      <h1 id="header">Tweets</h1>
+      <div>
+        
+        <div id = "tweets"></div>
+      </div>
+      
+    </div>
+		<footer class="container">
+		</footer>
+
+    </body>
+
+    <script>
+        $('document').ready(function(){
+            $('#header').hide();
+            var socket= io.connect('http://localhost:3000');
+            
+            $('#other').hide();
+            $('#mediaselection').change(function(){
+              var selectedText=$(this).find('option:selected').text();
+            
+              if(selectedText != 'Choose a movie or show'){
+                $('#getresults').data('media', selectedText);
+              }
+              
+            });
+            
+            $('#getresults').on('click', function(e){
+              
+                e.preventDefault();
+                $('#header').show();
+                $('#tweets').empty();
+                if($('#other').is(':visible')){
+                  $(this).data('media', $('#other').val())
+                }
+                var media = $(this).data('media');
+                if (media != undefined) {
+                  
+                  socket.emit('getresults', media);
+                  socket.on('tweet', function (objectData) {
+                    var t = objectData.data;
+                    console.log(t);
+                    for (var i = 0; i < t.statuses.length; i++) {
+                      
+                      $('#tweets').append(
+                        $("<div>").html('<hr><iframe class="profilepic" src="' + t.statuses[i].user.profile_image_url_https + '" frameborder=0 scrolling=no></iframe> <a href="#">' + t.statuses[i].user.screen_name + '</a>')
+                          .append(
+                            $("<div>").text(t.statuses[i].text).hide()
+                          )
+                          .on('click', function () {
+                            $(this).children('div').toggle();
+                            return false;
+                          })
+                      ).append('<a href= "https://twitter.com/statuses/'+ t.statuses[i].id_str +'">See full tweet</a>')
+                }
+              });
+              }
+            });
+        });
+        $('#mediaselection').on('change', function(){
+                
+                if(this.value =='other'){
+                  $('#other').show().prop('required', true);
+                }
+                else{
+                  $('#other').hide().prop('required', false);
+                }
+            }); 
+          
+    </script>
+</html>
